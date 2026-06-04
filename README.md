@@ -21,7 +21,62 @@ Below is the architectural schematic of our 5-stage pipelined processor, includi
 
 ---
 
-## 2. Immediate Generation Logic
+## 2. RV32I Base Instruction Set
+
+### Instruction Formats
+| Format | bits 31:25 | bits 24:20 | bits 19:15 | bits 14:12 | bits 11:7 | bits 6:0 | Type |
+|---|---|---|---|---|---|---|---|
+| **R-type** | funct7 | rs2 | rs1 | funct3 | rd | opcode | Register-Register |
+| **I-type** | imm[11:0] | | rs1 | funct3 | rd | opcode | Register-Immediate |
+| **S-type** | imm[11:5] | rs2 | rs1 | funct3 | imm[4:0] | opcode | Store |
+| **B-type (SB)** | imm[12\|10:5] | rs2 | rs1 | funct3 | imm[4:1\|11] | opcode | Branch |
+| **U-type** | imm[31:12] | | | | rd | opcode | Upper Immediate |
+| **J-type (UJ)** | imm[20\|10:1\|11\|19:12] | | | | rd | opcode | Jump |
+
+### RV32I Instruction Set Map
+| Instruction | bits 31:25 | bits 24:20 | bits 19:15 | bits 14:12 | bits 11:7 | bits 6:0 | Assembly Syntax |
+|---|---|---|---|---|---|---|---|
+| **LUI** | imm[31:12] | | | | rd | 0110111 | `LUI rd, imm` |
+| **AUIPC** | imm[31:12] | | | | rd | 0010111 | `AUIPC rd, imm` |
+| **JAL** | imm[20\|10:1\|11\|19:12] | | | | rd | 1101111 | `JAL rd, imm` |
+| **JALR** | imm[11:0] | | rs1 | 000 | rd | 1100111 | `JALR rd, rs1, imm` |
+| **BEQ** | imm[12\|10:5] | rs2 | rs1 | 000 | imm[4:1\|11] | 1100011 | `BEQ rs1, rs2, imm` |
+| **BNE** | imm[12\|10:5] | rs2 | rs1 | 001 | imm[4:1\|11] | 1100011 | `BNE rs1, rs2, imm` |
+| **BLT** | imm[12\|10:5] | rs2 | rs1 | 100 | imm[4:1\|11] | 1100011 | `BLT rs1, rs2, imm` |
+| **BGE** | imm[12\|10:5] | rs2 | rs1 | 101 | imm[4:1\|11] | 1100011 | `BGE rs1, rs2, imm` |
+| **BLTU** | imm[12\|10:5] | rs2 | rs1 | 110 | imm[4:1\|11] | 1100011 | `BLTU rs1, rs2, imm` |
+| **BGEU** | imm[12\|10:5] | rs2 | rs1 | 111 | imm[4:1\|11] | 1100011 | `BGEU rs1, rs2, imm` |
+| **LB** | imm[11:0] | | rs1 | 000 | rd | 0000011 | `LB rd, rs1, imm` |
+| **LH** | imm[11:0] | | rs1 | 001 | rd | 0000011 | `LH rd, rs1, imm` |
+| **LW** | imm[11:0] | | rs1 | 010 | rd | 0000011 | `LW rd, rs1, imm` |
+| **LBU** | imm[11:0] | | rs1 | 100 | rd | 0000011 | `LBU rd, rs1, imm` |
+| **LHU** | imm[11:0] | | rs1 | 101 | rd | 0000011 | `LHU rd, rs1, imm` |
+| **SB** | imm[11:5] | rs2 | rs1 | 000 | imm[4:0] | 0100011 | `SB rs1, rs2, imm` |
+| **SH** | imm[11:5] | rs2 | rs1 | 001 | imm[4:0] | 0100011 | `SH rs1, rs2, imm` |
+| **SW** | imm[11:5] | rs2 | rs1 | 010 | imm[4:0] | 0100011 | `SW rs1, rs2, imm` |
+| **ADDI** | imm[11:0] | | rs1 | 000 | rd | 0010011 | `ADDI rd, rs1, imm` |
+| **SLTI** | imm[11:0] | | rs1 | 010 | rd | 0010011 | `SLTI rd, rs1, imm` |
+| **SLTIU** | imm[11:0] | | rs1 | 011 | rd | 0010011 | `SLTIU rd, rs1, imm` |
+| **XORI** | imm[11:0] | | rs1 | 100 | rd | 0010011 | `XORI rd, rs1, imm` |
+| **ORI** | imm[11:0] | | rs1 | 110 | rd | 0010011 | `ORI rd, rs1, imm` |
+| **ANDI** | imm[11:0] | | rs1 | 111 | rd | 0010011 | `ANDI rd, rs1, imm` |
+| **SLLI** | 0000000 | shamt | rs1 | 001 | rd | 0010011 | `SLLI rd, rs1, shamt` |
+| **SRLI** | 0000000 | shamt | rs1 | 101 | rd | 0010011 | `SRLI rd, rs1, shamt` |
+| **SRAI** | 0100000 | shamt | rs1 | 101 | rd | 0010011 | `SRAI rd, rs1, shamt` |
+| **ADD** | 0000000 | rs2 | rs1 | 000 | rd | 0110011 | `ADD rd, rs1, rs2` |
+| **SUB** | 0100000 | rs2 | rs1 | 000 | rd | 0110011 | `SUB rd, rs1, rs2` |
+| **SLL** | 0000000 | rs2 | rs1 | 001 | rd | 0110011 | `SLL rd, rs1, rs2` |
+| **SLT** | 0000000 | rs2 | rs1 | 010 | rd | 0110011 | `SLT rd, rs1, rs2` |
+| **SLTU** | 0000000 | rs2 | rs1 | 011 | rd | 0110011 | `SLTU rd, rs1, rs2` |
+| **XOR** | 0000000 | rs2 | rs1 | 100 | rd | 0110011 | `XOR rd, rs1, rs2` |
+| **SRL** | 0000000 | rs2 | rs1 | 101 | rd | 0110011 | `SRL rd, rs1, rs2` |
+| **SRA** | 0100000 | rs2 | rs1 | 101 | rd | 0110011 | `SRA rd, rs1, rs2` |
+| **OR** | 0000000 | rs2 | rs1 | 110 | rd | 0110011 | `OR rd, rs1, rs2` |
+| **AND** | 0000000 | rs2 | rs1 | 111 | rd | 0110011 | `AND rd, rs1, rs2` |
+
+---
+
+## 3. Immediate Generation Logic
 
 RISC-V instructions use structured layouts where immediate bits are strategically placed to minimize multiplexer complexity. The sign bit (bit 31) is always in the same position across all formats.
 
