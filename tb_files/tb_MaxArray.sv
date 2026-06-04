@@ -9,19 +9,13 @@ module tb_MaxArray;
   // 10ns clock period (100 MHz)
   initial clk = 0;
   always #5 clk = ~clk;
+
   // DUT Instantiation
   top #(.RESET_PC(32'h0000)) u_top (
     .clk     (clk),
     .reset_n (reset_n)
   );
-  // Helper: read a 32-bit word from data memory (little-endian)
-  // Uses hierarchical access into the DUT's data memory
-  function automatic logic [31:0] read_dmem_word(input int addr);
-    return {u_top.u_data_memory.mem[addr+3],
-            u_top.u_data_memory.mem[addr+2],
-            u_top.u_data_memory.mem[addr+1],
-            u_top.u_data_memory.mem[addr]};
-  endfunction
+
   // Test Sequence
   integer cycle_count;
   logic program_done;
@@ -67,15 +61,15 @@ module tb_MaxArray;
     $display("[%0t] Program completed in %0d cycles", $time, cycle_count);
     $display("");
 
-    // Verify array values in data memory
+    // Verify array values in data memory using inline byte concatenation
     $display("--- Data Memory Contents ---");
-    $display("  A[0] = %0d (expected 8)",   $signed(read_dmem_word(0)));
-    $display("  A[1] = %0d (expected -21)",  $signed(read_dmem_word(4)));
-    $display("  A[2] = %0d (expected 15)",   $signed(read_dmem_word(8)));
-    $display("  A[3] = %0d (expected -3)",   $signed(read_dmem_word(12)));
-    $display("  A[4] = %0d (expected 42)",   $signed(read_dmem_word(16)));
-    $display("  A[5] = %0d (expected 17)",   $signed(read_dmem_word(20)));
-    $display("  A[6] = %0d (expected 42, the maximum)", $signed(read_dmem_word(24)));
+    $display("  A[0] = %0d (expected 8)",   $signed({u_top.u_data_memory.mem[3], u_top.u_data_memory.mem[2], u_top.u_data_memory.mem[1], u_top.u_data_memory.mem[0]}));
+    $display("  A[1] = %0d (expected -21)",  $signed({u_top.u_data_memory.mem[7], u_top.u_data_memory.mem[6], u_top.u_data_memory.mem[5], u_top.u_data_memory.mem[4]}));
+    $display("  A[2] = %0d (expected 15)",   $signed({u_top.u_data_memory.mem[11], u_top.u_data_memory.mem[10], u_top.u_data_memory.mem[9], u_top.u_data_memory.mem[8]}));
+    $display("  A[3] = %0d (expected -3)",   $signed({u_top.u_data_memory.mem[15], u_top.u_data_memory.mem[14], u_top.u_data_memory.mem[13], u_top.u_data_memory.mem[12]}));
+    $display("  A[4] = %0d (expected 42)",   $signed({u_top.u_data_memory.mem[19], u_top.u_data_memory.mem[18], u_top.u_data_memory.mem[17], u_top.u_data_memory.mem[16]}));
+    $display("  A[5] = %0d (expected 17)",   $signed({u_top.u_data_memory.mem[23], u_top.u_data_memory.mem[22], u_top.u_data_memory.mem[21], u_top.u_data_memory.mem[20]}));
+    $display("  A[6] = %0d (expected 42, the maximum)", $signed({u_top.u_data_memory.mem[27], u_top.u_data_memory.mem[26], u_top.u_data_memory.mem[25], u_top.u_data_memory.mem[24]}));
     $display("");
 
     // Verify key register values
@@ -87,11 +81,11 @@ module tb_MaxArray;
     $display("");
 
     // Final pass/fail check
-    if ($signed(read_dmem_word(24)) == 42) begin
+    if ($signed({u_top.u_data_memory.mem[27], u_top.u_data_memory.mem[26], u_top.u_data_memory.mem[25], u_top.u_data_memory.mem[24]}) == 42) begin
       $display(" TEST PASSED: Maximum value = 42 stored at A[6]");
     end else begin
       $display(" TEST FAILED: Expected 42 at A[6], got %0d",
-               $signed(read_dmem_word(24)));
+               $signed({u_top.u_data_memory.mem[27], u_top.u_data_memory.mem[26], u_top.u_data_memory.mem[25], u_top.u_data_memory.mem[24]}));
     end
 
     $finish;

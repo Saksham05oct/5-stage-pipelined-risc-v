@@ -13,20 +13,6 @@ module tb_test13_x0_protection;
     .reset_n (reset_n)
   );
 
-  function automatic logic [31:0] read_dmem_word(input int addr);
-    return {u_top.u_data_memory.mem[addr+3],
-            u_top.u_data_memory.mem[addr+2],
-            u_top.u_data_memory.mem[addr+1],
-            u_top.u_data_memory.mem[addr]};
-  endfunction
-
-  task write_instruction(input int addr, input logic [31:0] inst);
-    u_top.u_instruction_memory.mem[addr]   = inst[31:24];
-    u_top.u_instruction_memory.mem[addr+1] = inst[23:16];
-    u_top.u_instruction_memory.mem[addr+2] = inst[15:8];
-    u_top.u_instruction_memory.mem[addr+3] = inst[7:0];
-  endtask
-
   int cycle_count = 0;
   logic test_passed = 1'b1;
 
@@ -34,14 +20,14 @@ module tb_test13_x0_protection;
     $dumpfile("tb_test13_x0_protection.vcd");
     $dumpvars(0, tb_test13_x0_protection);
 
-    // Initialize test program instructions
-    write_instruction(32'h00, 32'h07b00013); // addi  x0, x0, 123   (attempt to write 123 to x0; should fail)
-    write_instruction(32'h04, 32'h00500093); // addi  x1, x0, 5     (read from x0; should get 0 + 5 = 5)
-    write_instruction(32'h08, 32'h00102023); // sw    x1, 0(x0)     (store result using base x0)
+    // Initialize test program instructions directly using inline byte concatenation
+    {u_top.u_instruction_memory.mem[0],  u_top.u_instruction_memory.mem[1],  u_top.u_instruction_memory.mem[2],  u_top.u_instruction_memory.mem[3]}  = 32'h07b00013; // addi  x0, x0, 123   (attempt to write 123 to x0; should fail)
+    {u_top.u_instruction_memory.mem[4],  u_top.u_instruction_memory.mem[5],  u_top.u_instruction_memory.mem[6],  u_top.u_instruction_memory.mem[7]}  = 32'h00500093; // addi  x1, x0, 5     (read from x0; should get 0 + 5 = 5)
+    {u_top.u_instruction_memory.mem[8],  u_top.u_instruction_memory.mem[9],  u_top.u_instruction_memory.mem[10], u_top.u_instruction_memory.mem[11]} = 32'h00102023; // sw    x1, 0(x0)     (store result using base x0)
 
     // Pad remaining instruction memory with NOPs
     for (int i = 12; i < 128; i = i + 4) begin
-      write_instruction(i, 32'h00000013); // nop
+      {u_top.u_instruction_memory.mem[i], u_top.u_instruction_memory.mem[i+1], u_top.u_instruction_memory.mem[i+2], u_top.u_instruction_memory.mem[i+3]} = 32'h00000013; // nop
     end
 
     // Reset sequence
@@ -60,12 +46,12 @@ module tb_test13_x0_protection;
     $display("x0 = %d (exp 0)", u_top.u_register_file.regs[0]);
     $display("x1 = %d (exp 5)", u_top.u_register_file.regs[1]);
     $display("--- Data Memory ---");
-    $display("mem[0] = %d (exp 5)", read_dmem_word(0));
+    $display("mem[0] = %d (exp 5)", {u_top.u_data_memory.mem[3], u_top.u_data_memory.mem[2], u_top.u_data_memory.mem[1], u_top.u_data_memory.mem[0]});
 
     // Verify Results
     if (u_top.u_register_file.regs[0] !== 32'd0) test_passed = 0;
     if (u_top.u_register_file.regs[1] !== 32'd5) test_passed = 0;
-    if (read_dmem_word(0) !== 32'd5)            test_passed = 0;
+    if ({u_top.u_data_memory.mem[3], u_top.u_data_memory.mem[2], u_top.u_data_memory.mem[1], u_top.u_data_memory.mem[0]} !== 32'd5)            test_passed = 0;
 
     if (test_passed) begin
       $display("RESULT: TEST 13 PASSED");

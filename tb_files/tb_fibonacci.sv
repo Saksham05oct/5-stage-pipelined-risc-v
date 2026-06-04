@@ -13,13 +13,6 @@ module tb_fibonacci;
     .reset_n (reset_n)
   );
 
-  function automatic logic [31:0] read_dmem_word(input int addr);
-    return {u_top.u_data_memory.mem[addr+3],
-            u_top.u_data_memory.mem[addr+2],
-            u_top.u_data_memory.mem[addr+1],
-            u_top.u_data_memory.mem[addr]};
-  endfunction
-
   integer cycle_count;
   integer i;
   logic program_done;
@@ -78,10 +71,10 @@ module tb_fibonacci;
     for (i = 0; i < 10; i = i + 1) begin
       $display("  fib[%0d] = %0d (expected %0d)",
                i,
-               read_dmem_word(i * 4),
+               {u_top.u_data_memory.mem[(i * 4) + 3], u_top.u_data_memory.mem[(i * 4) + 2], u_top.u_data_memory.mem[(i * 4) + 1], u_top.u_data_memory.mem[i * 4]},
                expected_fib[i]);
 
-      if (read_dmem_word(i * 4) !== expected_fib[i])
+      if ({u_top.u_data_memory.mem[(i * 4) + 3], u_top.u_data_memory.mem[(i * 4) + 2], u_top.u_data_memory.mem[(i * 4) + 1], u_top.u_data_memory.mem[i * 4]} !== expected_fib[i])
         test_passed = 1'b0;
     end
 
