@@ -1,0 +1,13 @@
+sv_files/risc_pkg.sv
+sv_files/alu.sv
+sv_files/branch_control.sv
+sv_files/control.sv
+sv_files/data_memory.sv
+sv_files/decode.sv
+sv_files/extend.sv
+sv_files/fetch.sv
+sv_files/hazard_control.sv
+sv_files/instruction_memory.sv
+sv_files/pc_register.sv
+sv_files/register_file.sv
+sv_files/top.sv

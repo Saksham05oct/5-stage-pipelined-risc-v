@@ -1,0 +1,15 @@
+# Exclude interview review and bug explanations
+stall_bug_explanation.txt
+RV32I_INTERVIEW_REVIEW.html
+
+# Exclude simulation build directories and waveform logs
+obj_dir/
+work/
+*.vcd
+machine_code.mem
+
+# OS/IDE metadata
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
